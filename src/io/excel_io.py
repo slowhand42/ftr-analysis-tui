@@ -9,7 +9,6 @@ import shutil
 import tempfile
 import openpyxl
 from openpyxl.styles import PatternFill
-import errno
 from unittest.mock import Mock
 
 if TYPE_CHECKING:
@@ -407,7 +406,7 @@ class ExcelIO:
                     # Atomically move temporary file to final location
                     shutil.move(temp_path, str(final_path))
                     
-            except (OSError, TypeError) as e:
+            except (OSError, TypeError):
                 # Fallback for permission errors
                 # Save directly to final path
                 with pd.ExcelWriter(final_path, engine='openpyxl') as writer:

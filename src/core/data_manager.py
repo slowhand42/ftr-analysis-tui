@@ -1,7 +1,7 @@
 """Central data management and business logic."""
 
 import pandas as pd
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from datetime import datetime
 import logging
 

@@ -7,7 +7,6 @@ Excel data operations, cluster filtering, and sheet navigation.
 
 import pandas as pd
 import threading
-import uuid
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 from collections import deque

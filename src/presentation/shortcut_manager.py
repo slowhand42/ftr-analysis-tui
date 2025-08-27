@@ -4,8 +4,10 @@ ShortcutManager - Handles keyboard shortcut routing and context-sensitive behavi
 This class manages keyboard shortcuts and provides context-sensitive behavior.
 """
 
-from typing import Dict, Callable, Optional, Any
-from textual.app import App
+from typing import Dict, Callable, Optional, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..app import AnalysisTUIApp
 
 
 class ShortcutManager:

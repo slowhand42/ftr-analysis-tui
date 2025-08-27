@@ -183,7 +183,7 @@ class ConstraintRow:
     date_grid_comments: Dict[int, str] = field(default_factory=dict)
     lodf_grid_values: List[float] = field(default_factory=list)
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate fields after initialization."""
         # VIEW must be positive
         if self.view <= 0:
@@ -198,7 +198,7 @@ class ConstraintRow:
             raise ValueError("DIRECTION must be -1 or 1")
     
     @classmethod
-    def from_dataframe_row(cls, row_data: Dict[str, any]) -> 'ConstraintRow':
+    def from_dataframe_row(cls, row_data: Dict[str, Any]) -> 'ConstraintRow':
         """Create ConstraintRow from DataFrame row data."""
         return cls(
             cluster=row_data['CLUSTER'],
@@ -224,7 +224,7 @@ class ConstraintRow:
             recent_delta=row_data.get('RECENT_DELTA', 0.0)
         )
     
-    def to_dataframe_dict(self) -> Dict[str, any]:
+    def to_dataframe_dict(self) -> Dict[str, Any]:
         """Convert ConstraintRow to dictionary for DataFrame updates."""
         return {
             'CLUSTER': self.cluster,

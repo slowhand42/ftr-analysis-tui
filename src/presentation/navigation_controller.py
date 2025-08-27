@@ -1,8 +1,6 @@
 """Navigation controller for coordinated navigation across the TUI."""
 
-from typing import TYPE_CHECKING, List, Tuple, Optional
-import time
-from ..models.data_models import SessionState
+from typing import TYPE_CHECKING, List, Tuple
 
 if TYPE_CHECKING:
     from ..app import AnalysisTUIApp

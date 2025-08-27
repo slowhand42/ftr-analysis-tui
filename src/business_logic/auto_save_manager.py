@@ -11,7 +11,7 @@ import tempfile
 import shutil
 import datetime
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional
 from concurrent.futures import ThreadPoolExecutor
 
 from src.business_logic.excel_data_manager import ExcelDataManager

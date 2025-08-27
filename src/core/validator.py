@@ -1,6 +1,5 @@
 """Input validation logic for editable fields."""
 
-from typing import Tuple, Optional
 import logging
 
 from ..models import ValidationResult, ColumnType

@@ -5,7 +5,6 @@ This class will be implemented following TDD methodology to satisfy the test req
 """
 
 from textual.widgets import Static
-from textual.containers import Vertical
 
 
 # Help text content as defined in the task requirements

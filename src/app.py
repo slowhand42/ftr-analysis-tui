@@ -1,9 +1,8 @@
 """Main TUI application for Flow Analysis Editor."""
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Horizontal, Vertical
+from textual.containers import Container
 from textual.binding import Binding
-from textual import events
 from pathlib import Path
 import logging
 import sys
@@ -196,7 +195,7 @@ class AnalysisTUIApp(App):
             # self.lodf_grid.render_grid(lodf_values, lodf_comments)
             
             # Update status
-            cluster_info = self.data_manager.get_cluster_info(sheet, cluster_id)
+            self.data_manager.get_cluster_info(sheet, cluster_id)
             self.title = f"Cluster {cluster_id} ({self.current_cluster_index + 1}/{len(self.current_cluster_list)})"
             
             # Save state (use cluster index, not ID)

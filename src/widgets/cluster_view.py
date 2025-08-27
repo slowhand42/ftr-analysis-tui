@@ -4,9 +4,7 @@ from textual.widgets import DataTable, Input
 from textual.coordinate import Coordinate
 from textual.reactive import reactive
 from textual import events
-from textual.keys import Keys
-from rich.text import Text
-from typing import Optional, Callable, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple
 import pandas as pd
 import time
 
@@ -528,7 +526,7 @@ class ClusterView(DataTable):
         if self.start_edit_mode(event.character or ""):
             # Ensure response time is under 50ms
             end_time = time.perf_counter()
-            trigger_time = (end_time - start_time) * 1000
+            (end_time - start_time) * 1000
             return True
         return False
     
@@ -675,7 +673,7 @@ class ClusterView(DataTable):
         
         # Ensure feedback is under 100ms
         end_time = time.perf_counter()
-        validation_time = (end_time - start_time) * 1000
+        (end_time - start_time) * 1000
     
     def _commit_edit(self) -> bool:
         """
