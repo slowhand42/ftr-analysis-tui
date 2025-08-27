@@ -46,6 +46,11 @@ class SheetTabs(Static):
         """Render the tabs."""
         text = Text()
 
+        # Handle empty sheets list
+        if not self.sheets:
+            text.append(" No sheets available ", style="dim")
+            return text
+
         for i, sheet in enumerate(self.sheets):
             if i > 0:
                 text.append(" | ", style="dim")
@@ -57,6 +62,22 @@ class SheetTabs(Static):
                 text.append(f" {sheet} ", style="dim")
 
         return text
+
+    def update_sheets(self, sheets: List[str]) -> None:
+        """
+        Update the list of available sheets.
+
+        Args:
+            sheets: New list of sheet names
+        """
+        self.sheets = sheets
+        if sheets and self.active_sheet not in sheets:
+            # If current active sheet is not in the new list, select the first one
+            self.active_sheet = sheets[0]
+            self.current_index = 0
+        elif sheets and self.active_sheet in sheets:
+            self.current_index = sheets.index(self.active_sheet)
+        self.refresh()
 
     def set_active_sheet(self, sheet_name: str) -> None:
         """

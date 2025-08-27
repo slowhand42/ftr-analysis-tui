@@ -3,6 +3,7 @@
 import pandas as pd
 from typing import Dict, List, Optional
 from datetime import datetime
+from pathlib import Path
 import logging
 
 from ..models import ClusterInfo, EditRecord, ExcelMetadata
@@ -46,8 +47,20 @@ class ExcelDataManager:
         logger.info(f"Loading Excel file: {file_path}")
         start_time = datetime.now()
 
+        # Create ExcelIO instance if not provided
+        if self.excel_io is None:
+            self.excel_io = ExcelIO(Path(file_path))
+        
         # Load workbook
-        self.data = self.excel_io.load_workbook(file_path)
+        success = self.excel_io.load_workbook()
+        if success:
+            # Load all sheets
+            sheet_names = self.excel_io.get_sheet_names()
+            self.data = {}
+            for sheet_name in sheet_names:
+                self.data[sheet_name] = self.excel_io.load_sheet(sheet_name)
+        else:
+            raise ValueError(f"Failed to load Excel file: {file_path}")
         self.file_path = file_path
 
         # Build metadata
@@ -200,6 +213,20 @@ class ExcelDataManager:
     def get_sheet_names(self) -> List[str]:
         """Get list of all sheet names."""
         return list(self.data.keys())
+    
+    def can_edit_column(self, column: str) -> bool:
+        """
+        Check if a column is editable based on business rules.
+        
+        Args:
+            column: Column name to check
+            
+        Returns:
+            True if column is editable, False otherwise
+        """
+        # Define editable columns
+        editable_columns = {'VIEW', 'SHORTLIMIT'}
+        return column.upper() in editable_columns
 
     def _build_metadata(self, start_time: datetime) -> None:
         """Build metadata about the loaded file."""

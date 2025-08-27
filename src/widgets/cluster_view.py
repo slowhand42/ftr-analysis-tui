@@ -8,7 +8,7 @@ from typing import Optional, List, Dict, Any, Tuple
 import pandas as pd
 import time
 
-from ..business_logic.excel_data_manager import ExcelDataManager
+from ..core.data_manager import ExcelDataManager
 from ..business_logic.color_formatter import ColorFormatter
 from ..business_logic.validators import DataValidator
 
@@ -59,7 +59,7 @@ class ClusterView(DataTable):
         Initialize ClusterView with data manager and color formatter.
 
         Args:
-            data_manager: ExcelDataManager for data operations
+            data_manager: DataManager for data operations
             color_formatter: ColorFormatter for cell colors
         """
         super().__init__(**kwargs)
@@ -70,10 +70,15 @@ class ClusterView(DataTable):
         self.available_columns: List[str] = []
         self._resize_called: bool = False
         self._mock_size = None
+        self._initialized = False  # Track if table has been initialized
 
         # Configure table
         self.cursor_type = "cell"
         self.zebra_stripes = True
+        self.show_header = True
+        self.show_row_labels = False  # Don't show row numbers
+        self.fixed_columns = 0
+        self.fixed_rows = 0
 
         # Quick edit functionality
         self.edit_mode: bool = False
@@ -109,7 +114,15 @@ class ClusterView(DataTable):
     @property
     def size(self):
         """Mock size property for testing."""
-        return self._mock_size
+        if self._mock_size is not None:
+            return self._mock_size
+        # Return a default size if parent size is not available
+        try:
+            return super().size
+        except (AttributeError, RuntimeError):
+            # Fallback size for testing or when not yet mounted
+            from textual.geometry import Size
+            return Size(80, 24)
 
     @size.setter
     def size(self, value):
@@ -121,53 +134,109 @@ class ClusterView(DataTable):
         """Deleter for mock size property."""
         self._mock_size = None
 
-    def load_cluster(self, cluster_name: str) -> None:
+    def on_mount(self) -> None:
+        """Called when widget is mounted to the app."""
+        # Initialize table columns when mounted
+        self._initialize_table()
+    
+    def _initialize_table(self) -> None:
+        """Initialize the table with columns."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        if self._initialized:
+            return
+            
+        try:
+            # Add columns based on DISPLAY_COLUMNS that are available
+            # Start with a subset that we know exists
+            columns_to_add = ['VIEW', 'PACTUAL', 'PEXPECTED', 'RECENT_DELTA', 'SHORTLIMIT']
+            
+            for col in columns_to_add:
+                if col in self.DISPLAY_COLUMNS:
+                    width = self.COLUMN_CONFIG.get(col, {}).get('width', 15)
+                    self.add_column(col, key=col, width=width)
+            
+            self._initialized = True
+            logger.info(f"Initialized table with columns: {columns_to_add}")
+        except Exception as e:
+            logger.error(f"Failed to initialize table columns: {e}")
+
+    def load_cluster(self, cluster_name: str, sheet: str = None) -> None:
         """
         Load and display data for specified cluster.
 
         Args:
             cluster_name: Name of cluster to load
+            sheet: Sheet name to load cluster from. If None, attempts to use data manager's active sheet
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Update reactive property
         self.current_cluster = cluster_name
 
         # Get cluster data
-        cluster_data = self.data_manager.get_cluster_data(cluster_name)
+        # Extract cluster ID from cluster name (e.g., "CLUSTER_004" -> 4)
+        try:
+            cluster_id = int(cluster_name.replace("CLUSTER_", ""))
+        except ValueError:
+            cluster_id = 1  # Default fallback
+        
+        # Get current sheet - use provided sheet or try to get from data manager
+        if sheet:
+            current_sheet = sheet
+        else:
+            # Try to get active sheet from data manager if it supports it
+            if hasattr(self.data_manager, 'get_active_sheet_name'):
+                current_sheet = self.data_manager.get_active_sheet_name()
+            else:
+                # Fallback to first available sheet
+                sheets = self.data_manager.get_sheet_names()
+                current_sheet = sheets[0] if sheets else "SEP25"
+        
+        cluster_data = self.data_manager.get_cluster_data(current_sheet, cluster_id)
         self.current_data = cluster_data
 
         # Store available columns for later use
         self.available_columns = [
             col for col in self.DISPLAY_COLUMNS if col in cluster_data.columns]
 
+        logger.info(f"Loading cluster {cluster_name} with {len(cluster_data)} rows")
+        
+        # Ensure table is initialized
+        if not self._initialized:
+            self._initialize_table()
+        
         try:
-            # Clear existing table
-            self.clear(columns=True)
-
-            if cluster_data.empty:
-                return
-
-            # Add columns that exist in the data
-            for col in self.available_columns:
-                width = self.COLUMN_CONFIG.get(col, {}).get('width', 15)
-                self.add_column(col, key=col, width=width)
-
-            # Add rows
-            for idx, row in cluster_data.iterrows():
-                formatted_row = []
-
-                for col in self.available_columns:
-                    value = row[col]
-                    formatted_value = self._format_cell_value(col, value)
-                    formatted_row.append(formatted_value)
-
-                self.add_row(*formatted_row, key=str(idx))
-
-            # Apply formatting to all cells
-            self._apply_all_formatting()
-        except Exception:
-            # If we can't interact with the DataTable (e.g., during testing without app),
-            # just store the data for later methods to work with
-            pass
+            # Only try to clear if we have rows to clear
+            if self.row_count > 0:
+                try:
+                    self.clear()
+                except Exception as e:
+                    logger.debug(f"Could not clear rows: {e}")
+            
+            # Add data rows
+            if not cluster_data.empty:
+                for idx, row in cluster_data.iterrows():
+                    formatted_row = []
+                    for col in self.available_columns:
+                        if col in row:
+                            value = row[col]
+                            formatted_value = self._format_cell_value(col, value)
+                            formatted_row.append(formatted_value)
+                        else:
+                            formatted_row.append("")
+                    
+                    # Only add the row if we have the right number of values
+                    if len(formatted_row) == len(self.columns):
+                        self.add_row(*formatted_row, key=str(idx))
+                
+                logger.info(f"Successfully added {len(cluster_data)} rows to table")
+        except Exception as e:
+            logger.error(f"Failed to update table data: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
 
     def _format_cell_value(self, column: str, value: Any) -> str:
         """

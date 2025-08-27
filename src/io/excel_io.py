@@ -72,8 +72,17 @@ class ExcelIO:
         data = {}
 
         try:
-            # Load each analysis sheet
-            for sheet in self.ANALYSIS_SHEETS:
+            # Get available sheets
+            available_sheets = self.get_sheet_names()
+            
+            # Load each analysis sheet that exists
+            sheets_to_load = [sheet for sheet in self.ANALYSIS_SHEETS if sheet in available_sheets]
+            if not sheets_to_load:
+                # Fallback: load all non-excluded sheets
+                sheets_to_load = [sheet for sheet in available_sheets if sheet not in self.EXCLUDED_SHEETS]
+                logger.info(f"No predefined analysis sheets found, loading available sheets: {sheets_to_load}")
+            
+            for sheet in sheets_to_load:
                 logger.debug(f"Loading sheet: {sheet}")
                 df = pd.read_excel(file_path, sheet_name=sheet)
 

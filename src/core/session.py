@@ -42,7 +42,7 @@ class SessionManager:
             return
 
         try:
-            self.state_io.save_json(state.to_dict(), str(self.state_file_path))
+            self.state_io.save_session(state)
             self.current_state = state
             logger.debug(f"Saved session state to {self.state_file_path}")
         except Exception as e:

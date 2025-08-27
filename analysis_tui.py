@@ -3,7 +3,8 @@
 Simple entry point for the Analysis TUI application.
 
 This file allows running the app directly without installation:
-    python analysis_tui.py <excel_file>
+    python analysis_tui.py                    # Uses default small.xlsx file
+    python analysis_tui.py <excel_file>       # Uses specified file
 """
 
 import sys

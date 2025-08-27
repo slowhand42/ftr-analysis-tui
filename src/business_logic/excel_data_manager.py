@@ -14,7 +14,7 @@ from pathlib import Path
 
 from src.io.excel_io import ExcelIO
 from src.business_logic.validators import DataValidator
-from src.models.data_models import EditRecord
+from src.models.data_models import EditRecord, ClusterInfo
 
 
 class ExcelDataManager:
@@ -461,3 +461,49 @@ class ExcelDataManager:
             self._sheet_cache[sheet_name] = self._excel_io.load_sheet(sheet_name)
 
         return self._sheet_cache[sheet_name]
+
+    def get_cluster_info(self, sheet: str, cluster_id: int) -> ClusterInfo:
+        """
+        Get detailed information about a cluster.
+
+        Args:
+            sheet: Sheet name (will set as active sheet if different)
+            cluster_id: Cluster identifier (converted to cluster name)
+
+        Returns:
+            ClusterInfo object
+        """
+        # Ensure the correct sheet is active
+        if sheet != self._active_sheet:
+            self.set_active_sheet(sheet)
+        
+        # Convert cluster_id to cluster name format
+        cluster_name = f"CLUSTER_{cluster_id:03d}"
+        
+        # Get cluster data
+        cluster_data = self.get_cluster_data(cluster_name)
+        
+        if cluster_data.empty:
+            return ClusterInfo(
+                cluster_id=cluster_id,
+                constraint_count=0,
+                cuid_list=[],
+                has_sp_value=False,
+                monitor=None,
+                contingency=None
+            )
+
+        # Extract info
+        cuid_list = cluster_data['CUID'].tolist() if 'CUID' in cluster_data.columns else []
+        has_sp = cluster_data['SP'].notna().any() if 'SP' in cluster_data.columns else False
+        monitor = cluster_data['MON'].iloc[0] if 'MON' in cluster_data.columns and not cluster_data.empty else None
+        contingency = cluster_data['CONT'].iloc[0] if 'CONT' in cluster_data.columns and not cluster_data.empty else None
+
+        return ClusterInfo(
+            cluster_id=cluster_id,
+            constraint_count=len(cluster_data),
+            cuid_list=cuid_list,
+            has_sp_value=has_sp,
+            monitor=monitor,
+            contingency=contingency
+        )

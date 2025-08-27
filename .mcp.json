@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "web-tui": {
+      "comment": "Start MCP terminal server without default app - use openApp tool to launch",
+      "command": "node",
+      "args": [
+        "/home/dev/projects/mcp-cli-terminal/dist/index.js"
+      ]
+    }
+  }
+}
