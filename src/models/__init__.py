@@ -14,7 +14,7 @@ from .data_models import (
 
 __all__ = [
     'SessionState',
-    'EditRecord', 
+    'EditRecord',
     'ClusterInfo',
     'ColorThreshold',
     'ColumnType',

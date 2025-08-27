@@ -36,7 +36,7 @@ class SessionState:
     current_row: int = 0
     window_size: Tuple[int, int] = (120, 40)
     last_modified: datetime = field(default_factory=datetime.now)
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
         return {
@@ -47,7 +47,7 @@ class SessionState:
             'window_size': list(self.window_size),
             'last_modified': self.last_modified.isoformat()
         }
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> 'SessionState':
         """Create from dictionary."""
@@ -57,7 +57,8 @@ class SessionState:
             current_cluster=data['current_cluster'],
             current_row=data.get('current_row', 0),
             window_size=tuple(data.get('window_size', [120, 40])),
-            last_modified=datetime.fromisoformat(data.get('last_modified', datetime.now().isoformat()))
+            last_modified=datetime.fromisoformat(
+                data.get('last_modified', datetime.now().isoformat()))
         )
 
 
@@ -72,7 +73,7 @@ class EditRecord:
     new_value: float
     timestamp: datetime
     cuid: Optional[str] = None
-    
+
     def __str__(self) -> str:
         """Human-readable representation."""
         return (f"Edit at {self.timestamp.strftime('%H:%M:%S')}: "
@@ -89,7 +90,7 @@ class ClusterInfo:
     has_sp_value: bool = False
     monitor: Optional[str] = None
     contingency: Optional[str] = None
-    
+
     def __str__(self) -> str:
         """Human-readable cluster description."""
         return f"Cluster {self.cluster_id} ({self.constraint_count} constraints)"
@@ -102,7 +103,7 @@ class ColorThreshold:
     max_value: float
     min_color: str  # RGB hex or color name
     max_color: str  # RGB hex or color name
-    
+
     def get_color_at_value(self, value: float) -> str:
         """Calculate interpolated color for a given value."""
         # This is a placeholder - actual implementation will interpolate colors
@@ -133,7 +134,7 @@ class ExcelMetadata:
     total_clusters: int
     load_time_seconds: float
     last_modified: datetime
-    
+
     def __str__(self) -> str:
         """Summary string."""
         return (f"Excel file: {self.file_path} "
@@ -154,12 +155,12 @@ class GridComment:
 @dataclass
 class ConstraintRow:
     """Data model for a single constraint row with validation and DataFrame integration."""
-    
+
     # Required fields
     cluster: int
     cuid: str
     view: float
-    
+
     # Optional fields with defaults
     shortlimit: Optional[float] = None
     prev: float = 0.0
@@ -182,21 +183,21 @@ class ConstraintRow:
     date_grid_values: List[float] = field(default_factory=list)
     date_grid_comments: Dict[int, str] = field(default_factory=dict)
     lodf_grid_values: List[float] = field(default_factory=list)
-    
+
     def __post_init__(self) -> None:
         """Validate fields after initialization."""
         # VIEW must be positive
         if self.view <= 0:
             raise ValueError("VIEW must be positive")
-        
+
         # SHORTLIMIT must be negative or None
         if self.shortlimit is not None and self.shortlimit >= 0:
             raise ValueError("SHORTLIMIT must be negative")
-        
+
         # DIRECTION must be -1 or 1
         if self.direction not in (-1, 1):
             raise ValueError("DIRECTION must be -1 or 1")
-    
+
     @classmethod
     def from_dataframe_row(cls, row_data: Dict[str, Any]) -> 'ConstraintRow':
         """Create ConstraintRow from DataFrame row data."""
@@ -223,7 +224,7 @@ class ConstraintRow:
             exp_op=row_data.get('EXP_OP', 0.0),
             recent_delta=row_data.get('RECENT_DELTA', 0.0)
         )
-    
+
     def to_dataframe_dict(self) -> Dict[str, Any]:
         """Convert ConstraintRow to dictionary for DataFrame updates."""
         return {
@@ -249,15 +250,15 @@ class ConstraintRow:
             'EXP_OP': self.exp_op,
             'RECENT_DELTA': self.recent_delta
         }
-    
+
     @property
     def is_binding(self) -> bool:
         """Check if constraint is binding (flow >= 95% of limit)."""
         if self.limit == 0:
             return False
         return self.flow >= (0.95 * self.limit)
-    
-    @property 
+
+    @property
     def has_outages(self) -> bool:
         """Check if constraint has outage comments."""
         return len(self.date_grid_comments) > 0

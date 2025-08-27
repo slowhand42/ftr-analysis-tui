@@ -17,7 +17,7 @@ FILE OPERATIONS:
   F5        Refresh data
 
 NAVIGATION:
-  n/p       Next/Previous cluster  
+  n/p       Next/Previous cluster
   tab       Next sheet
   ↑↓←→      Move cursor
   Home/End  Start/End of row
@@ -40,18 +40,18 @@ Press Escape to close help
 
 class HelpOverlay(Static):
     """Overlay widget that displays keyboard shortcuts help."""
-    
+
     def __init__(self, **kwargs):
         """Initialize help overlay."""
         super().__init__(HELP_TEXT, **kwargs)
         self.visible = False
-        
+
     def show(self) -> None:
         """Show the help overlay."""
         self.visible = True
         # In a full implementation, this would make the widget visible
         # For now, just set the visible flag that tests check
-        
+
     def hide(self) -> None:
         """Hide the help overlay."""
         self.visible = False
