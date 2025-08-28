@@ -494,16 +494,19 @@ def main():
     
     if len(sys.argv) < 2:
         excel_file = default_file
-        print(f"No file specified, using default: {excel_file}")
+        # Don't print during startup - it interferes with TUI
+        # logger.info(f"No file specified, using default: {excel_file}")
     else:
         excel_file = sys.argv[1]
 
     if not Path(excel_file).exists():
-        print(f"Error: File not found: {excel_file}")
+        # Don't print during startup - it interferes with TUI
+        # logger.error(f"Error: File not found: {excel_file}")
         if excel_file != default_file and Path(default_file).exists():
-            print(f"Falling back to default file: {default_file}")
+            # logger.info(f"Falling back to default file: {default_file}")
             excel_file = default_file
         else:
+            # Can't use TUI to show error, exit with error code
             sys.exit(1)
 
     # Configure logging
