@@ -104,25 +104,33 @@ class SimpleClusterView(DataTable):
         try:
             # Initialize columns based on actual dataframe columns if not done yet
             if not self._columns_initialized:
+                # Columns to explicitly hide
+                hidden_cols = ["SP", "VIEWLG", "CSP95", "CSP80", "CSP50", "CSP20", "CSP5", 
+                              "LIMIT", "SOURCE", "SINK"]
+                
                 # Important columns to show first (if they exist)
                 # Match actual column names from the Excel file
-                priority_cols = ["CLUSTER", "SP", "CUID", "VIEW", "PREV (SEP25)", 
-                                "PACTUAL", "PEXPECTED", "VIEWLG", "CSP95", "CSP80",
-                                "LIMIT", "SOURCE", "SINK", "DIRECTION", "MON", "CONT"]
+                priority_cols = ["CLUSTER", "CUID", "VIEW", "PREV (SEP25)", 
+                                "PACTUAL", "PEXPECTED", "SHORTLIMIT", "SHORTLIMIT*",
+                                "DIRECTION", "MON", "CONT", "RECENT_DELTA", "FLOW"]
                 
                 # Get all columns from dataframe
                 all_cols = list(df.columns)
                 
                 # Order columns: priority ones first (that exist), then others
                 columns_to_add = []
-                for col in priority_cols:
-                    if col in all_cols:
-                        columns_to_add.append(col)
+                added_set = set()  # Track already added columns to prevent duplicates
                 
-                # Add any remaining columns not in priority list (limit to first 30 for display)
-                for col in all_cols:
-                    if col not in columns_to_add and len(columns_to_add) < 30:
+                for col in priority_cols:
+                    if col in all_cols and col not in hidden_cols and col not in added_set:
                         columns_to_add.append(col)
+                        added_set.add(col)
+                
+                # Add any remaining columns not in priority list or hidden (limit to first 30 for display)
+                for col in all_cols:
+                    if col not in added_set and col not in hidden_cols and len(columns_to_add) < 30:
+                        columns_to_add.append(col)
+                        added_set.add(col)
                 
                 # Add columns to table with appropriate widths
                 for col in columns_to_add:
@@ -231,7 +239,7 @@ class SimpleClusterView(DataTable):
         editor = CellEditor(
             initial_value=current_value,
             column_name=column_name,
-            on_submit=lambda value: self.save_edit(row, col, column_name, value),
+            on_submit=lambda value, arrow_key=None: self.save_edit(row, col, column_name, value, arrow_key),
             on_cancel=self.cancel_edit,
             parent_view=self  # Pass reference to access keystroke buffer
         )
@@ -239,7 +247,7 @@ class SimpleClusterView(DataTable):
         # Mount the editor to the app
         self.app.mount(editor)
         
-    def save_edit(self, row: int, col: int, column_name: str, value: str) -> None:
+    def save_edit(self, row: int, col: int, column_name: str, value: str, arrow_key: str = None) -> None:
         """Save the edited value."""
         self.editing_cell = False
         
@@ -269,9 +277,15 @@ class SimpleClusterView(DataTable):
             # This is simpler than trying to update individual cells
             self.load_data(self.current_df)
             
-            # Restore cursor position to stay on same cell
+            # Handle cursor positioning based on how the edit was confirmed
             if saved_cursor:
-                self.move_cursor(row=saved_cursor.row, column=saved_cursor.column)
+                if arrow_key:
+                    # Arrow key was pressed - just restore position, the arrow navigation will happen naturally
+                    self.move_cursor(row=saved_cursor.row, column=saved_cursor.column)
+                else:
+                    # Enter was pressed - move down one row
+                    new_row = min(saved_cursor.row + 1, self.row_count - 1)
+                    self.move_cursor(row=new_row, column=saved_cursor.column)
             
             # Notify parent app to save to Excel
             if hasattr(self.app, 'on_cell_edit'):

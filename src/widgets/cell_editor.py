@@ -102,7 +102,7 @@ class CellEditor(Container):
             if self._validate_value(value):
                 # Call submit callback
                 if self.on_submit_callback:
-                    self.on_submit_callback(value)
+                    self.on_submit_callback(value, arrow_key=None)
                 
                 # Remove this widget
                 self.remove()
@@ -116,9 +116,13 @@ class CellEditor(Container):
             self.remove()
             event.stop()
         elif event.key in ["up", "down", "left", "right"]:
-            # Cancel editing and allow navigation
-            if self.on_cancel_callback:
-                self.on_cancel_callback()
+            # Save current edit and allow navigation
+            if self.input:
+                value = self.input.value.strip()
+                if self._validate_value(value):
+                    if self.on_submit_callback:
+                        # Pass the arrow key as a second parameter to indicate no cursor movement needed
+                        self.on_submit_callback(value, arrow_key=event.key)
             self.remove()
             # Let the event continue for navigation
             return
