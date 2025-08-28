@@ -86,15 +86,17 @@ class AnalysisTUIApp(App):
         # Numbers 0-9 will be handled for cell editing instead
     ]
 
-    def __init__(self, excel_file: str, **kwargs):
+    def __init__(self, excel_file: str, preloaded_data=None, **kwargs):
         """
         Initialize the application.
 
         Args:
             excel_file: Path to Excel file to edit
+            preloaded_data: Pre-loaded sheet data dictionary (optional)
         """
         super().__init__(**kwargs)
         self.excel_file = excel_file
+        self.preloaded_data = preloaded_data
 
         # Initialize components
         self.excel_io = ExcelIO(Path(excel_file))
@@ -155,8 +157,20 @@ class AnalysisTUIApp(App):
             if self.loading_manager:
                 self.loading_manager.update_step("Loading Excel file...", 20)
             
-            # Load data synchronously
-            self.data_manager.load_excel(self.excel_file)
+            # Use preloaded data if available, otherwise load normally
+            if self.preloaded_data:
+                # Directly set the sheets data in the data manager
+                self.data_manager.data = self.preloaded_data
+                self.data_manager.file_path = self.excel_file
+                # Build metadata (needed for proper initialization)
+                from datetime import datetime
+                start_time = datetime.now()
+                self.data_manager._build_metadata(start_time)
+                # Build cluster cache (needed for navigation)
+                self.data_manager._build_cluster_cache()
+            else:
+                # Load data synchronously
+                self.data_manager.load_excel(self.excel_file)
             
             if self.loading_manager:
                 self.loading_manager.update_step("Initializing session...", 60)
@@ -516,8 +530,71 @@ def main():
         filename='analysis-tui.log'
     )
 
-    # Run application
-    app = AnalysisTUIApp(excel_file)
+    # Pre-load the Excel file BEFORE starting Textual
+    # This avoids terminal queries during the loading phase
+    import pandas as pd
+    import time
+    import threading
+    
+    # Electricity-themed ASCII spinner - simulating electrical current flow
+    animation_chars = [
+        "[-    ]",
+        "[=-   ]", 
+        "[~=-  ]",
+        "[~~=- ]",
+        "[~~~=-]",
+        "[ ~~~=]",
+        "[  ~~=]",
+        "[   ~=]",
+        "[    =]",
+        "[    -]"
+    ]
+    
+    spinner_running = True
+    
+    def show_spinner():
+        """Display animated spinner while loading."""
+        char_index = 0
+        while spinner_running:
+            print(f"\r⚡ Loading Excel file... {animation_chars[char_index]}", end="", flush=True)
+            char_index = (char_index + 1) % len(animation_chars)
+            time.sleep(0.1)
+        # Clear the spinner line when done
+        print("\r" + " " * 50 + "\r", end="", flush=True)
+    
+    # Start spinner in background thread
+    spinner_thread = threading.Thread(target=show_spinner)
+    spinner_thread.start()
+    
+    try:
+        # Load Excel file first
+        excel_data = pd.ExcelFile(excel_file)
+        sheets_dict = {}
+        for sheet_name in excel_data.sheet_names:
+            sheets_dict[sheet_name] = excel_data.parse(sheet_name)
+        
+        # Stop spinner
+        spinner_running = False
+        spinner_thread.join()
+        print(f"✓ Loaded {len(sheets_dict)} sheets successfully")
+        time.sleep(0.5)  # Brief pause to show success message
+    except Exception as e:
+        # Stop spinner
+        spinner_running = False
+        spinner_thread.join()
+        print(f"\n✗ Error loading Excel file: {e}")
+        sys.exit(1)
+    
+    # Now clear the terminal and start Textual
+    import os
+    os.system('clear' if os.name != 'nt' else 'cls')
+    
+    # Set environment to help with terminal compatibility
+    if 'TERM' not in os.environ:
+        os.environ['TERM'] = 'xterm-256color'
+    
+    # Run application with pre-loaded data
+    app = AnalysisTUIApp(excel_file, preloaded_data=sheets_dict)
     app.run()
 
 
