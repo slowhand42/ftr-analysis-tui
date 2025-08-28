@@ -15,13 +15,14 @@ logger = logging.getLogger(__name__)
 class SimpleClusterView(DataTable):
     """Simplified cluster view that just displays data."""
     
-    def __init__(self, **kwargs):
+    def __init__(self, formatter=None, **kwargs):
         super().__init__(**kwargs)
         self.show_header = True
         self.zebra_stripes = True
         self.cursor_type = "cell"
         self._data_loaded = False
-        self.formatter = ColorFormatter()
+        # Use provided formatter or create default one with dark theme
+        self.formatter = formatter if formatter else ColorFormatter(theme="dark")
         # Map column names to ColumnType for formatting
         self.column_type_map = {
             'VIEW': ColumnType.VIEW,
@@ -179,11 +180,14 @@ class SimpleClusterView(DataTable):
                                     color = self.formatter.get_color(column_type, val)
                                     
                                     # Convert hex color to Rich style
-                                    if color and color != "#FFFFFF":
-                                        # Create styled text with background color and dark text
+                                    # Skip neutral colors (white for light theme, dark gray for dark theme)
+                                    if color and color not in ["#FFFFFF", "#1A1A1A"]:
+                                        # Create styled text with background color
                                         styled_text = Text(text_val)
-                                        # Use black text on colored backgrounds for readability
-                                        styled_text.stylize(f"black on {color}")
+                                        # For dark theme, use white text on colored backgrounds
+                                        # For light theme, use black text on colored backgrounds
+                                        text_color = "white" if self.formatter.theme == "dark" else "black"
+                                        styled_text.stylize(f"{text_color} on {color}")
                                         row_data.append(styled_text)
                                     else:
                                         row_data.append(Text(text_val))

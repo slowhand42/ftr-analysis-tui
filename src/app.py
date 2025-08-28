@@ -82,6 +82,7 @@ class AnalysisTUIApp(App):
         Binding("ctrl+g", "goto_cluster", "Go To Cluster"),
         Binding("ctrl+s", "save", "Save"),
         Binding("ctrl+q", "quit", "Quit"),
+        Binding("t", "toggle_theme", "Theme"),
         # Removed number key bindings to allow quick editing
         # Numbers 0-9 will be handled for cell editing instead
     ]
@@ -103,7 +104,9 @@ class AnalysisTUIApp(App):
         self.state_io = StateIO()
         self.data_manager = ExcelDataManager(self.excel_io)
         self.validator = DataValidator()
-        self.formatter = ColorFormatter()
+        # Initialize with dark theme by default
+        self.app_theme = "dark"
+        self.formatter = ColorFormatter(theme=self.app_theme)
         self.session_manager = SessionManager(self.state_io)
 
         # Initialize shortcut manager
@@ -134,7 +137,7 @@ class AnalysisTUIApp(App):
         # For now, create with empty sheets list
         self.sheet_tabs = SheetTabs(sheets=[], on_sheet_change=self.on_sheet_change)
         # Use SimpleClusterView for now to test data display
-        self.cluster_view = SimpleClusterView()
+        self.cluster_view = SimpleClusterView(formatter=self.formatter)
         self.date_grid = ColorGrid(grid_type="date", formatter=self.formatter)
         self.lodf_grid = ColorGrid(grid_type="lodf", formatter=self.formatter)
         self.status_bar = StatusBar()
@@ -423,6 +426,23 @@ class AnalysisTUIApp(App):
             logger.error(f"Error saving cell edit: {e}")
             self.notify(f"Error saving: {e}", severity="error")
 
+    def action_toggle_theme(self) -> None:
+        """Toggle between dark and light themes."""
+        # Toggle theme
+        self.app_theme = "light" if self.app_theme == "dark" else "dark"
+        
+        # Update formatter
+        self.formatter = ColorFormatter(theme=self.app_theme)
+        
+        # Update cluster view's formatter if it exists
+        if hasattr(self, 'cluster_view') and self.cluster_view:
+            self.cluster_view.formatter = self.formatter
+            # Reload current data to apply new theme
+            self.display_current_cluster()
+        
+        # Notify user
+        self.notify(f"Switched to {self.app_theme} theme", severity="information")
+    
     def action_next_cluster(self) -> None:
         """Navigate to next cluster (with bounds checking)."""
         if not self.current_cluster_list:

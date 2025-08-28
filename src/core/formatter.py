@@ -11,20 +11,34 @@ class ColorFormatter:
     Calculates colors based on Excel conditional formatting rules.
 
     Color schemes:
-    - Core columns (VIEW, PREV, etc.): White→Yellow→Red gradients
-    - RECENT_DELTA: Blue→White→Red
+    - Core columns (VIEW, PREV, etc.): Neutral→Yellow→Red gradients
+    - RECENT_DELTA: Blue→Neutral→Red
     - Date grids: Value-based gradients
-    - LODF: Red→White→Green
+    - LODF: Red→Neutral→Green
+    
+    Supports both light and dark themes with appropriate neutral colors.
     """
 
     # Color definitions (RGB hex)
     WHITE = "#FFFFFF"
+    DARK_NEUTRAL = "#1A1A1A"  # Very dark gray for dark theme
     YELLOW = "#FFFF00"
     RED = "#FF0000"
     BLUE = "#0000FF"
     GREEN = "#00FF00"
     BLACK = "#000000"
     GREY = "#808080"
+    
+    def __init__(self, theme: str = "dark"):
+        """
+        Initialize formatter with theme.
+        
+        Args:
+            theme: "dark" or "light" theme mode
+        """
+        self.theme = theme
+        # Set neutral color based on theme
+        self.neutral = self.DARK_NEUTRAL if theme == "dark" else self.WHITE
 
     def get_color(self, column_type: ColumnType, value: Optional[float]) -> str:
         """
@@ -38,7 +52,7 @@ class ColorFormatter:
             Color string (hex RGB)
         """
         if value is None or math.isnan(value):
-            return self.WHITE
+            return self.neutral
 
         # Map column types to color methods
         if column_type in [ColumnType.VIEW, ColumnType.SP, ColumnType.PREV,
@@ -54,26 +68,26 @@ class ColorFormatter:
             return self._get_lodf_color(value)
         elif column_type == ColumnType.FLOW:
             # No background color for FLOW, just bold text indicator
-            return self.WHITE
+            return self.neutral
         else:
-            return self.WHITE
+            return self.neutral
 
     def _get_core_column_color(self, value: float) -> str:
         """
         Get color for core columns (VIEW, PREV, etc.).
 
         Thresholds:
-        - ≤ 0.5: White
-        - 0.5 to 4th percentile: White→Yellow gradient
+        - ≤ 0.5: Neutral
+        - 0.5 to 4th percentile: Neutral→Yellow gradient
         - 4th percentile to 20: Yellow→Red gradient
         - > 20: Red
         """
         if value <= 0.5:
-            return self.WHITE
+            return self.neutral
         elif value <= 1.0:  # Assuming 4th percentile around 1.0
-            # White to Yellow gradient
+            # Neutral to Yellow gradient
             ratio = (value - 0.5) / 0.5
-            return self._interpolate_color(self.WHITE, self.YELLOW, ratio)
+            return self._interpolate_color(self.neutral, self.YELLOW, ratio)
         elif value <= 20:
             # Yellow to Red gradient
             ratio = (value - 1.0) / 19.0
@@ -87,20 +101,20 @@ class ColorFormatter:
 
         Thresholds:
         - -50: Blue
-        - 0: White
+        - 0: Neutral
         - +50: Red
         (Gradient between these points)
         """
         if value <= -50:
             return self.BLUE
         elif value < 0:
-            # Blue to White gradient
+            # Blue to Neutral gradient
             ratio = (value + 50) / 50
-            return self._interpolate_color(self.BLUE, self.WHITE, ratio)
+            return self._interpolate_color(self.BLUE, self.neutral, ratio)
         elif value <= 50:
-            # White to Red gradient
+            # Neutral to Red gradient
             ratio = value / 50
-            return self._interpolate_color(self.WHITE, self.RED, ratio)
+            return self._interpolate_color(self.neutral, self.RED, ratio)
         else:
             return self.RED
 
@@ -109,23 +123,23 @@ class ColorFormatter:
         Get color for date columns.
 
         SP rows (Parent):
-        - 0: White
-        - 0 to 10th percentile: White→Yellow
+        - 0: Neutral
+        - 0 to 10th percentile: Neutral→Yellow
         - 10th percentile to 100: Yellow→Red
         - > 100: Red
 
         VIEW rows (Children):
-        - 0: White
-        - 0 to 150: White→Black gradient
+        - 0: Neutral
+        - 0 to 150: Neutral→Black gradient
         - > 150: Black
         """
         # For now, using SP row logic as default
         # In actual implementation, would need row context
         if value == 0:
-            return self.WHITE
+            return self.neutral
         elif value <= 10:  # Assuming 10th percentile
             ratio = value / 10
-            return self._interpolate_color(self.WHITE, self.YELLOW, ratio)
+            return self._interpolate_color(self.neutral, self.YELLOW, ratio)
         elif value <= 100:
             ratio = (value - 10) / 90
             return self._interpolate_color(self.YELLOW, self.RED, ratio)
@@ -138,19 +152,19 @@ class ColorFormatter:
 
         Thresholds:
         - -1.0: Red
-        - 0.0: White
+        - 0.0: Neutral
         - +1.0: Green
         """
         if value <= -1.0:
             return self.RED
         elif value < 0:
-            # Red to White gradient
+            # Red to Neutral gradient
             ratio = (value + 1.0)
-            return self._interpolate_color(self.RED, self.WHITE, ratio)
+            return self._interpolate_color(self.RED, self.neutral, ratio)
         elif value <= 1.0:
-            # White to Green gradient
+            # Neutral to Green gradient
             ratio = value
-            return self._interpolate_color(self.WHITE, self.GREEN, ratio)
+            return self._interpolate_color(self.neutral, self.GREEN, ratio)
         else:
             return self.GREEN
 
