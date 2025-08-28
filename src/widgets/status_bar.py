@@ -38,7 +38,7 @@ class StatusBar(Static):
         """Initialize StatusBar."""
         super().__init__(**kwargs)
         self.status_text = ""
-        self.help_text = "[n]ext [p]rev | [Tab] Switch Sheet | [↑↓] Navigate | [Esc] Menu"
+        self.help_text = "[n/p] Clusters | [Tab/Shift+Tab] Sheets | [↑↓] Rows | [0-9] Edit | [Ctrl+S] Save | [Ctrl+Q] Quit"
         self.comment_text = ""
 
     def render(self) -> RenderableType:
@@ -118,8 +118,8 @@ class StatusBar(Static):
     def show_normal_mode(self) -> None:
         """Show normal mode help."""
         self.status_text = ""
-        self.help_text = ("[n]ext [p]rev | [Tab] Switch Sheet | "
-                          "[↑↓] Navigate | [0-9] Edit VIEW | [Esc] Menu")
+        self.help_text = ("[n/p] Clusters | [Tab/Shift+Tab] Sheets | "
+                          "[↑↓] Rows | [0-9] Edit | [Ctrl+S] Save | [Ctrl+Q] Quit")
         self.refresh()
 
     def update_position(self, sheet: str, cluster: int, row: int, total_rows: int) -> None:
@@ -176,7 +176,7 @@ class StatusBar(Static):
         if self.edit_mode:
             return Text("[Enter] Save | [Esc] Cancel | [Tab] Next Field")
         else:
-            return Text("[n/p] Navigate | [0-9] Edit | [Ctrl+S] Save | [?] Help")
+            return Text("[n/p] Clusters | [Tab/Shift+Tab] Sheets | [↑↓] Rows | [0-9] Edit | [Ctrl+S] Save | [Ctrl+Q] Quit")
 
     def _truncate_filename(self, filename: str, max_len: int = 30) -> str:
         """Truncate long filenames."""

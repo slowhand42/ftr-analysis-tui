@@ -24,6 +24,8 @@ class ColumnType(Enum):
     DATE_COLUMN = "DATE_COLUMN"
     LODF_COLUMN = "LODF_COLUMN"
     FLOW = "FLOW"
+    EXP_PEAK = "EXP_PEAK"
+    EXP_OP = "EXP_OP"
     OTHER = "OTHER"
 
 

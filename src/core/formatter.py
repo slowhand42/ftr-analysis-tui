@@ -217,6 +217,52 @@ class ColorFormatter:
         """
         return flow_value > max_hist if max_hist else False
 
+    def _get_exp_color(self, value: float) -> str:
+        """
+        Get color for EXP_PEAK and EXP_OP columns.
+        
+        Thresholds:
+        - < 0: Neutral (negative values are okay)
+        - 0 to 20: Neutral to Yellow gradient  
+        - 20 to 50: Yellow to Red gradient
+        - > 50: Red
+        """
+        if value < 0:
+            return self.neutral
+        elif value <= 20:
+            # Neutral to Yellow gradient
+            ratio = value / 20
+            return self._interpolate_color(self.neutral, self.YELLOW, ratio)
+        elif value <= 50:
+            # Yellow to Red gradient
+            ratio = (value - 20) / 30
+            return self._interpolate_color(self.YELLOW, self.RED, ratio)
+        else:
+            return self.RED
+    
     def get_error_color(self) -> str:
         """Get color for error cells."""
         return self.GREY
+    
+    def get_text_color_for_background(self, background_hex: str) -> str:
+        """
+        Determine appropriate text color (black or white) based on background brightness.
+        
+        Uses relative luminance formula to determine if text should be dark or light.
+        
+        Args:
+            background_hex: Background color in hex format
+            
+        Returns:
+            "black" for light backgrounds, "white" for dark backgrounds
+        """
+        r, g, b = self._hex_to_rgb(background_hex)
+        
+        # Calculate relative luminance using WCAG formula
+        # This accounts for human perception of different colors
+        luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        
+        # Use a threshold of 0.5 for determining text color
+        # Higher luminance = lighter background = use black text
+        # Lower luminance = darker background = use white text
+        return "black" if luminance > 0.5 else "white"

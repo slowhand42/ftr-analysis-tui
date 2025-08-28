@@ -184,9 +184,8 @@ class SimpleClusterView(DataTable):
                                     if color and color not in ["#FFFFFF", "#1A1A1A"]:
                                         # Create styled text with background color
                                         styled_text = Text(text_val)
-                                        # For dark theme, use white text on colored backgrounds
-                                        # For light theme, use black text on colored backgrounds
-                                        text_color = "white" if self.formatter.theme == "dark" else "black"
+                                        # Determine text color based on background brightness
+                                        text_color = self.formatter.get_text_color_for_background(color)
                                         styled_text.stylize(f"{text_color} on {color}")
                                         row_data.append(styled_text)
                                     else:
