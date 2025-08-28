@@ -4,6 +4,46 @@ __pycache__/
 *$py.class
 *.so
 .Python
+venv/
+env/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific
+*.log
+analysis-tui.log
+session_state.json
+*.xlsx.bak
+*.xlsx.backup
+*_backup_*.xlsx
+*_autosave_*.xlsx
+
+# Test files and directories
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Distribution / packaging
 build/
 develop-eggs/
 dist/
@@ -19,42 +59,40 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
-# Virtual Environment
-venv/
-ENV/
-env/
-.venv/
+# Analysis files (keep the folder but not the files)
+analysis_files/*.xlsx
+!analysis_files/.gitkeep
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
+# Snapshots directory (screenshots)
+snapshots/
+*.png
 
-# Project specific
-*.xlsx
-*.xls
-flow_results_processed_*.xlsx
-.ftr_analysis/
-session_state.json
-*.bak
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 
-# Logs
-*.log
-logs/
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Profiling data
+.prof

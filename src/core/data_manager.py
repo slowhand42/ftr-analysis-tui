@@ -73,14 +73,14 @@ class ExcelDataManager:
 
     def get_cluster_data(self, sheet: str, cluster_id: int) -> pd.DataFrame:
         """
-        Get all constraints for a specific cluster.
+        Get all constraints for a specific cluster (excluding the cluster header row).
 
         Args:
             sheet: Sheet name
             cluster_id: Cluster identifier
 
         Returns:
-            DataFrame with cluster's constraints
+            DataFrame with cluster's constraints (rows without SP values)
 
         Raises:
             KeyError: If sheet doesn't exist
@@ -94,6 +94,11 @@ class ExcelDataManager:
 
         if cluster_data.empty:
             raise ValueError(f"Cluster {cluster_id} not found in sheet {sheet}")
+
+        # Filter out cluster header rows (rows where SP has a value)
+        # Only return constraint rows (rows where SP is NaN/empty)
+        if 'SP' in cluster_data.columns:
+            cluster_data = cluster_data[cluster_data['SP'].isna()]
 
         return cluster_data
 

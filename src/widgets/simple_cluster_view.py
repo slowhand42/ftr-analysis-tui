@@ -44,6 +44,7 @@ class SimpleClusterView(DataTable):
         # Store the current DataFrame for editing
         self.current_df: Optional[pd.DataFrame] = None
         self.editing_cell = False
+        self._columns_initialized = False
         
     def on_mount(self) -> None:
         """Initialize columns when mounted - will be updated when data loads."""
@@ -51,14 +52,22 @@ class SimpleClusterView(DataTable):
         logger.info("SimpleClusterView: Widget mounted, waiting for data")
     
     def on_key(self, event) -> None:
-        """Override key handling for quick cell editing."""
-        # Don't process keys if already editing
+        """Override key handling for cell editing."""
+        # Don't process keys if already editing - let them be handled by app buffer
         if self.editing_cell:
             return
             
-        # If it's a number key, minus, or period, check if we can edit this cell
-        if event.key in "0123456789.-":
-            # Stop DataTable from processing it (prevents row jumping)
+        # Check for numerical keys that should trigger editing
+        # Note: Textual maps '-' to 'subtract' and '.' to 'decimal' in some cases
+        # So we check both event.key and event.character
+        numerical_keys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '-', 'subtract', 'decimal']
+        
+        # Check if it's a printable character we care about
+        is_numeric_char = (event.character in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '-'] 
+                          if event.character else False)
+        
+        if event.key in numerical_keys or is_numeric_char or event.key == "enter":
+            # Stop DataTable from processing it
             event.stop()
             
             # Get current cell position
@@ -71,8 +80,15 @@ class SimpleClusterView(DataTable):
                     
                     # Check if this column is editable (VIEW or SHORTLIMIT)
                     if column_name in ['VIEW', 'SHORTLIMIT', 'SHORTLIMIT*']:
-                        # Start editing with the initial key pressed
-                        self.start_editing(row, col, column_name, event.key)
+                        # Start editing - pass the initial character
+                        # Use event.character for printable chars, otherwise check if it's a number key
+                        if event.character and event.character in '0123456789.-':
+                            initial_char = event.character
+                        elif event.key in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']:
+                            initial_char = event.key
+                        else:
+                            initial_char = None
+                        self.start_editing(row, col, column_name, initial_char)
                     else:
                         # Not an editable column
                         self.app.notify(f"Column {column_name} is not editable", severity="warning")
@@ -181,31 +197,43 @@ class SimpleClusterView(DataTable):
             import traceback
             logger.error(traceback.format_exc())
     
-    def start_editing(self, row: int, col: int, column_name: str, initial_key: str) -> None:
-        """Start editing a cell with an initial keystroke."""
-        if self.editing_cell or self.current_df is None:
+    def start_editing(self, row: int, col: int, column_name: str, initial_char: str = None) -> None:
+        """Start editing a cell."""
+        if self.current_df is None:
             return
         
+        # Set editing flag immediately
         self.editing_cell = True
         
-        # Get current value (for reference, but we start with the key pressed)
-        current_value = ""
-        if row < len(self.current_df):
-            df_row = self.current_df.iloc[row]
-            if column_name in df_row.index:
-                val = df_row[column_name]
-                if pd.notna(val):
-                    current_value = str(val)
+        # Use the DataTable row position as DataFrame index
+        df_row_index = row
         
-        # Create editor with initial key as the value
-        initial_value = initial_key if initial_key != "." else "0."
+        # Determine initial editor value
+        # If the edit was triggered by typing a number, clear the existing content
+        # and start with just that first character.
+        if initial_char is not None:
+            current_value = initial_char
+        else:
+            # Otherwise, use the current cell value as the starting point
+            current_value = ""
+            if df_row_index < len(self.current_df):
+                df_row = self.current_df.iloc[df_row_index]
+                if column_name in df_row.index:
+                    val = df_row[column_name]
+                    if pd.notna(val):
+                        # Preserve how values are displayed in the table: avoid forcing 2 decimals
+                        # to keep simple integers as-is (e.g., 4 instead of 4.00) when editing.
+                        current_value = (
+                            str(int(val)) if isinstance(val, float) and val.is_integer() else str(val)
+                        )
         
         # Create and mount the editor overlay
         editor = CellEditor(
-            initial_value=initial_value,
+            initial_value=current_value,
             column_name=column_name,
             on_submit=lambda value: self.save_edit(row, col, column_name, value),
-            on_cancel=self.cancel_edit
+            on_cancel=self.cancel_edit,
+            parent_view=self  # Pass reference to access keystroke buffer
         )
         
         # Mount the editor to the app
@@ -215,7 +243,10 @@ class SimpleClusterView(DataTable):
         """Save the edited value."""
         self.editing_cell = False
         
-        if self.current_df is None or row >= len(self.current_df):
+        # Use the DataTable row position as DataFrame index
+        df_row_index = row
+        
+        if self.current_df is None or df_row_index >= len(self.current_df):
             return
         
         try:
@@ -225,15 +256,26 @@ class SimpleClusterView(DataTable):
             else:
                 new_value = float(value)
             
-            # Update the DataFrame
-            self.current_df.at[row, column_name] = new_value
+            # Get the actual DataFrame index for this row position
+            actual_df_index = self.current_df.index[df_row_index]
             
-            # Reload the entire table (simpler than updating single row)
+            # Update the DataFrame at the correct row using the actual index
+            self.current_df.at[actual_df_index, column_name] = new_value
+            
+            # Store current cursor position
+            saved_cursor = self.cursor_coordinate
+            
+            # Reload the data to refresh the display with the updated value
+            # This is simpler than trying to update individual cells
             self.load_data(self.current_df)
+            
+            # Restore cursor position to stay on same cell
+            if saved_cursor:
+                self.move_cursor(row=saved_cursor.row, column=saved_cursor.column)
             
             # Notify parent app to save to Excel
             if hasattr(self.app, 'on_cell_edit'):
-                self.app.on_cell_edit(row, column_name, new_value)
+                self.app.on_cell_edit(df_row_index, column_name, new_value)
             
             self.app.notify(f"Updated {column_name} to {value}", severity="information")
             
@@ -246,3 +288,4 @@ class SimpleClusterView(DataTable):
         """Cancel editing without saving."""
         self.editing_cell = False
         self.focus()
+    

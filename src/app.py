@@ -113,6 +113,7 @@ class AnalysisTUIApp(App):
         self.current_cluster_list: list = []
         self.current_cluster_index: int = 0
         self.loading_complete = False
+        self.has_unsaved_changes = False
 
         # Widgets (will be initialized in compose)
         self.sheet_tabs: Optional[SheetTabs] = None
@@ -122,6 +123,8 @@ class AnalysisTUIApp(App):
         self.status_bar: Optional[StatusBar] = None
         self.loading_screen: Optional[LoadingScreen] = None
         self.loading_manager: Optional[LoadingManager] = None
+        
+        # Number key handling is now done in SimpleClusterView.on_key()
 
     def compose(self) -> ComposeResult:
         """Create the UI layout."""
@@ -397,11 +400,10 @@ class AnalysisTUIApp(App):
             if cluster_data is not None and row < len(cluster_data):
                 cluster_data.at[row, column] = value
                 
-                # Trigger auto-save
-                new_path = self.data_manager.save_changes()
-                if new_path:
-                    logger.info(f"Auto-saved edit to {new_path}")
-                    self.status_bar.update_status(f"Saved to {Path(new_path).name}")
+                # Auto-save disabled for performance - use Ctrl+S to save manually
+                # Mark that we have unsaved changes
+                self.has_unsaved_changes = True
+                self.status_bar.update_status("Modified (unsaved) - Press Ctrl+S to save")
             
         except Exception as e:
             logger.error(f"Error saving cell edit: {e}")
@@ -462,6 +464,7 @@ class AnalysisTUIApp(App):
         """Manual save."""
         try:
             new_path = self.data_manager.save_changes()
+            self.has_unsaved_changes = False
             self.status_bar.update_status(f"Saved to {Path(new_path).name}")
         except Exception as e:
             self.status_bar.update_status(f"Save failed: {e}")

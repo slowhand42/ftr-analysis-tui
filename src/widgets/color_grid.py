@@ -115,8 +115,12 @@ class ColorGrid(Static):
             return self.comments[index].comment_text
         return None
 
-    def on_mouse_move(self, x: int, y: int) -> None:
+    def on_mouse_move(self, event) -> None:
         """Handle mouse hover to show tooltips."""
+        # Get coordinates from event
+        x = event.x
+        y = event.y
+        
         # Calculate which cell is being hovered
         # Account for label and spacing
         label_len = 11  # "Date Grid: " or "LODF Grid: "
