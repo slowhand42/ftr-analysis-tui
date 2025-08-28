@@ -54,8 +54,19 @@ class LoadingScreen(Vertical):
     @work
     async def animate_loading_dots(self):
         """Animate loading dots with electricity theme."""
-        # Electricity-themed spinner: lightning bolts, power symbols, electrical components
-        animation_chars = ["⚡", "🔌", "⚡", "🔋", "⚡", "💡", "⚡", "🔆", "⚡", "⚡"]
+        # Electricity-themed ASCII spinner - simulating electrical current flow
+        animation_chars = [
+            "[-    ]",
+            "[=-   ]", 
+            "[~=-  ]",
+            "[~~=- ]",
+            "[~~~=-]",
+            "[ ~~~=]",
+            "[  ~~=]",
+            "[   ~=]",
+            "[    =]",
+            "[    -]"
+        ]
         char_index = 0
         
         while not self.is_complete:
